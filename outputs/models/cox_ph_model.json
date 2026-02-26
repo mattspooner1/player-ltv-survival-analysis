@@ -1,0 +1,28 @@
+{
+  "model_type": "CoxPHSurvivalAnalysis",
+  "features": [
+    "billing_frequency_annual_flag",
+    "days_since_last_session",
+    "days_to_first_purchase",
+    "error_rate",
+    "fast_resolution_rate",
+    "feature_diversity_score",
+    "has_upgraded_flag",
+    "has_urgent_ticket_flag",
+    "provided_feedback",
+    "revenue_trend_slope_60d",
+    "signup_day_of_week",
+    "subscription_tenure_days",
+    "support_ticket_count_30d",
+    "total_sessions_7d",
+    "usage_consistency_cv",
+    "usage_trend_slope_30d",
+    "weekend_usage_ratio",
+    "referral_source_event",
+    "referral_source_organic",
+    "referral_source_other"
+  ],
+  "test_c_index": 0.3975563909774436,
+  "test_ibs": 0.08227986784033275,
+  "penalizer": 0.01
+}

@@ -1,0 +1,49 @@
+# Raw source data (download instructions in data/README.md)
+data/raw/*.csv
+
+# Model artifacts (committed: joblib files included for immediate reproducibility)
+outputs/models/*.pkl
+outputs/models/*.txt
+
+# Environment
+.env
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Test coverage artifacts
+.coverage
+htmlcov/
+
+# Quarto rendered HTML output (regenerate from .md source)
+docs/*.html
+docs/*_files/
+
+# Publication Manager working files
+PROJECT_METADATA.md

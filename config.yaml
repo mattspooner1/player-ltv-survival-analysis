@@ -1,0 +1,321 @@
+# =============================================================================
+# Player LTV Survival Analysis - Project Configuration
+# =============================================================================
+# All parameters centralized here. No hardcoded values in code.
+
+project:
+  name: "player_ltv_survival_analysis"
+  title: "Predicting Player Lifetime Value Using Survival Analysis"
+  version: "1.0.0"
+  author: "Matt Spooner"
+  random_seed: 42
+  analysis_date: "2024-12-31"
+
+# Revenue fields in the raw SaaS dataset are ~10x too large for a gaming
+# context. This factor scales mrr_amount, arr_amount, and refund_amount_usd
+# during the clean_data() step so that downstream values are realistic.
+revenue_scale_factor: 0.1
+
+# -----------------------------------------------------------------------------
+# Data Paths
+# -----------------------------------------------------------------------------
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  raw_files:
+    accounts: "data/raw/ravenstack_accounts.csv"
+    subscriptions: "data/raw/ravenstack_subscriptions.csv"
+    feature_usage: "data/raw/ravenstack_feature_usage.csv"
+    support_tickets: "data/raw/ravenstack_support_tickets.csv"
+    churn_events: "data/raw/ravenstack_churn_events.csv"
+  processed_files:
+    master_features: "data/processed/master_features.csv"
+    train: "data/processed/train.csv"
+    validation: "data/processed/validation.csv"
+    test: "data/processed/test.csv"
+  expected_row_counts:
+    accounts: 500
+    subscriptions: 5000
+    feature_usage: 25000
+    support_tickets: 2000
+    churn_events: 600
+
+# -----------------------------------------------------------------------------
+# Gaming Terminology Mapping (SaaS -> Gaming reframing)
+# -----------------------------------------------------------------------------
+terminology:
+  account: "player_account"
+  subscription: "premium_subscription"
+  plan_tier_mapping:
+    Basic: "Free-to-Play"
+    Pro: "Premium"
+    Enterprise: "VIP"
+  mrr_amount: "monthly_revenue_per_player"
+  feature_usage: "gameplay_session_events"
+  support_tickets: "player_support_interactions"
+  churn_events: "player_churn_with_offboarding_survey"
+
+# -----------------------------------------------------------------------------
+# Data Splitting
+# -----------------------------------------------------------------------------
+splitting:
+  method: "time_based"
+  date_column: "signup_date"
+  train_cutoff: "2024-07-01"        # Players who signed up before this date
+  validation_cutoff: "2024-09-01"   # Players between train_cutoff and this date
+  # Test: players who signed up after validation_cutoff
+  cross_validation:
+    method: "TimeSeriesSplit"
+    n_splits: 5
+
+# -----------------------------------------------------------------------------
+# Feature Engineering
+# -----------------------------------------------------------------------------
+features:
+  # RFM features
+  rfm:
+    - name: "days_since_signup"
+      formula: "(analysis_date - signup_date).days"
+    - name: "total_sessions_7d"
+      formula: "COUNT(usage_id WHERE usage_date BETWEEN signup_date AND signup_date + 7)"
+    - name: "avg_session_duration_7d"
+      formula: "AVG(usage_duration_secs WHERE usage_date BETWEEN signup_date AND signup_date + 7)"
+    - name: "total_revenue_30d"
+      formula: "SUM(mrr_amount WHERE subscription start_date < signup_date + 30)"
+    - name: "days_to_first_purchase"
+      formula: "MIN(subscription start_date) - signup_date WHERE is_trial = False"
+
+  # Behavioral aggregations
+  behavioral:
+    - name: "feature_diversity_score"
+      formula: "COUNT(DISTINCT feature_name) / total_available_features"
+    - name: "usage_consistency_cv"
+      formula: "STDEV(daily_usage_count) / MEAN(daily_usage_count)"
+    - name: "weekend_usage_ratio"
+      formula: "sessions_on_weekend / total_sessions"
+    - name: "error_rate"
+      formula: "SUM(error_count) / SUM(usage_count)"
+    - name: "beta_feature_adoption_flag"
+      formula: "1 IF any usage where is_beta_feature = True, else 0"
+
+  # Support interaction features
+  support:
+    - name: "support_ticket_count_30d"
+      formula: "COUNT(ticket_id WHERE submitted_at < signup_date + 30)"
+    - name: "avg_satisfaction_score"
+      formula: "AVG(satisfaction_score WHERE satisfaction_score IS NOT NULL)"
+    - name: "has_urgent_ticket_flag"
+      formula: "1 IF any ticket with priority = 'urgent', else 0"
+    - name: "fast_resolution_rate"
+      formula: "COUNT(tickets resolved < 24 hours) / total_tickets"
+
+  # Subscription behavior features
+  subscription:
+    - name: "has_upgraded_flag"
+      formula: "1 IF any subscription with upgrade_flag = True, else 0"
+    - name: "has_downgraded_flag"
+      formula: "1 IF any subscription with downgrade_flag = True, else 0"
+    - name: "subscription_tenure_days"
+      formula: "MAX(end_date) - MIN(start_date)"
+    - name: "subscription_churn_count"
+      formula: "COUNT(subscriptions WHERE churn_flag = True)"
+    - name: "billing_frequency_annual_flag"
+      formula: "1 IF billing_frequency = 'annual', else 0"
+
+  # Time series derived
+  time_series:
+    - name: "usage_trend_slope_30d"
+      formula: "Linear regression slope of daily_usage_count over first 30 days"
+    - name: "revenue_trend_slope_60d"
+      formula: "Linear regression slope of monthly revenue over first 60 days"
+    - name: "days_since_last_session"
+      formula: "analysis_date - MAX(usage_date)"
+
+  # Feature selection pipeline
+  selection:
+    correlation_threshold: 0.85      # Remove features with r > this
+    vif_threshold: 5.0               # Remove features with VIF > this
+    rfe_top_n: 20                    # Keep top N from RFE
+    target_feature_count: [15, 20]   # Final feature count range
+
+# -----------------------------------------------------------------------------
+# Missing Value Handling
+# -----------------------------------------------------------------------------
+missing_values:
+  satisfaction_score:
+    strategy: "median_impute_with_indicator"
+    impute_value: 3.0
+    indicator_column: "satisfaction_missing"
+  feedback_text:
+    strategy: "binary_indicator_only"
+    indicator_column: "provided_feedback"
+  end_date:
+    strategy: "retain_null"  # Null = active subscription (censored)
+
+# -----------------------------------------------------------------------------
+# Outlier Treatment
+# -----------------------------------------------------------------------------
+outliers:
+  mrr_amount:
+    detection: "iqr"
+    iqr_multiplier: 3.0
+    treatment: "winsorize_99th"  # Only if distorts training
+  usage_count:
+    detection: "threshold"
+    max_value: 500
+    treatment: "cap_99th"
+  resolution_time_hours:
+    detection: "threshold"
+    max_value: 720  # 30 days
+    treatment: "cap_95th"
+    create_flag: "extreme_resolution_time"
+    flag_threshold: 168  # 1 week
+
+# -----------------------------------------------------------------------------
+# Transformations
+# -----------------------------------------------------------------------------
+transformations:
+  log_transform:
+    - "mrr_amount"
+    - "usage_count"
+    - "resolution_time_hours"
+  scaling:
+    method: "StandardScaler"
+  encoding:
+    one_hot:
+      - column: "plan_tier"
+        drop_first: true
+      - column: "referral_source"
+        drop_first: true
+      - column: "country"
+        strategy: "top_5_plus_other"
+        drop_first: true
+    target_encode:
+      - column: "industry"
+        target: "churn_flag"
+  temporal:
+    extract_from: "signup_date"
+    features: ["signup_month", "signup_day_of_week"]
+
+# -----------------------------------------------------------------------------
+# Model Parameters
+# -----------------------------------------------------------------------------
+models:
+  cox_ph:
+    penalizer: 0.01
+    ties: "breslow"
+    variants:
+      - name: "cox_baseline"
+        description: "All features, no stratification"
+      - name: "cox_stratified_by_plan_tier"
+        description: "Stratified by plan_tier"
+    assumption_tests:
+      schoenfeld_alpha: 0.05
+      log_log_plot: true
+
+  lightgbm_survival:
+    # Used with scikit-survival GradientBoostingSurvivalAnalysis
+    # or LightGBM with survival objective
+    tuning:
+      method: "optuna"
+      n_trials: 20
+      metric: "rmse"
+      search_space:
+        num_leaves: [20, 50, 100]
+        learning_rate: [0.01, 0.05, 0.1]
+        max_depth: [5, 10, 15]
+        min_child_samples: [10, 20, 50]
+        n_estimators: [100, 200, 500]
+
+  baselines:
+    - name: "cohort_average_ltv"
+      description: "Mean 180-day revenue by signup_month and plan_tier"
+    - name: "logistic_regression_churn"
+      description: "Binary churn classifier (will churn within 180 days)"
+    - name: "random_forest_regressor"
+      description: "180-day revenue prediction (simpler ensemble baseline)"
+
+  ltv:
+    target_variable: "total_revenue_180d"
+    time_horizon_days: 180
+    pltv_formula: "P(survive 180 days | Cox) * E(revenue | survival, LightGBM)"
+
+# -----------------------------------------------------------------------------
+# Evaluation Targets
+# -----------------------------------------------------------------------------
+evaluation:
+  survival_metrics:
+    concordance_index:
+      target: 0.75
+      description: "Discriminatory power - probability of correct risk ranking"
+    integrated_brier_score:
+      target: 0.15  # Lower is better
+      description: "Calibration - avg squared diff between predicted and actual survival"
+    calibration_bins: 10
+
+  ltv_metrics:
+    rmse:
+      target: 1200.0  # GBP (revenue scaled 0.1x from raw SaaS data)
+      baseline: 1800.0
+    mape:
+      target: 0.25  # 25%
+    r_squared:
+      target: 0.60
+    decile_lift:
+      target_top_decile_revenue_share: 0.40  # Top decile captures 40%+ of revenue
+
+  segmentation_checks:
+    - segment: "plan_tier"
+      metrics: ["concordance_index", "rmse"]
+    - segment: "referral_source"
+      metrics: ["rmse", "mape"]
+    - segment: "tenure_cohort"
+      bins: ["0-30", "31-90", "91+"]
+      metrics: ["concordance_index", "rmse"]
+
+# -----------------------------------------------------------------------------
+# Business Validation Scenarios
+# -----------------------------------------------------------------------------
+business_validation:
+  retention_offer_simulation:
+    offer_value_gbp: 5.0
+    target_risk_percentile: 0.80  # Top 20% churn risk
+    assumed_retention_uplift: 0.15
+    avg_ltv_saved_player: 18.0
+    target_roi: 2.0  # 200%
+
+  budget_reallocation:
+    reallocation_pct: 0.20
+    annual_ua_budget: 2000000
+    target_incremental_revenue: 300000
+
+  early_prediction:
+    feature_window_days: 7
+    target_rmse: 1500.0  # GBP (vs 1200 for full model; revenue scaled 0.1x)
+
+# -----------------------------------------------------------------------------
+# Output Paths
+# -----------------------------------------------------------------------------
+outputs:
+  figures_dir: "outputs/figures"
+  models_dir: "outputs/models"
+  figure_dpi: 300
+  figure_format: "png"
+
+# -----------------------------------------------------------------------------
+# Visualization Style
+# -----------------------------------------------------------------------------
+visualization:
+  style: "whitegrid"
+  palette: "tab10"
+  font_size: 12
+  figure_dpi: 300
+  context: "notebook"
+
+# -----------------------------------------------------------------------------
+# Logging
+# -----------------------------------------------------------------------------
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  log_dir: "logs"
