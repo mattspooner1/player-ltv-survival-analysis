@@ -204,7 +204,7 @@ The value of this project lies in the **production-quality framework and methodo
 
 **Author:** Matt Spooner
 
-This project bridges my experience in **survival analysis for supporter retention at WWF** with the gaming industry's need for player lifetime value prediction. At WWF, I applied survival models to understand donor retention and predict supporter lifetime value -- the same statistical framework that powers this player analytics project. Survival analysis remains underutilised in gaming analytics portfolios despite being the natural technique for time-to-event questions ("when will this player churn?"), and I wanted to demonstrate how it complements standard classification approaches.
+This project applies **survival analysis** to the gaming industry's need for player lifetime value prediction. Survival analysis remains underutilised in gaming analytics portfolios despite being the natural technique for time-to-event questions ("when will this player churn?"), and I wanted to demonstrate how it complements standard classification approaches.
 
 The project targets **Senior Data Scientist roles in the gaming industry** (Jagex, Miniclip, Sony Interactive Entertainment) where player retention modelling, pLTV prediction, and stakeholder communication are core responsibilities.
 

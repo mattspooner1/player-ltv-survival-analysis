@@ -177,7 +177,7 @@ Transparency about limitations builds trust in the analysis and sets realistic e
 
 **Author:** Matt Spooner
 
-This analysis was developed as a portfolio project demonstrating the application of survival analysis to gaming player analytics. The methodology draws on experience with supporter retention modelling at WWF, where the same statistical framework (Cox Proportional Hazards, Kaplan-Meier estimation) was applied to predict donor lifetime value and optimise fundraising campaigns. The techniques transfer directly: donors and players share the same fundamental analytical challenge of predicting "who will stay, for how long, and how much value will they generate?"
+This analysis was developed as a portfolio project demonstrating the application of survival analysis to gaming player analytics. The statistical framework (Cox Proportional Hazards, Kaplan-Meier estimation) answers the fundamental question behind any retention problem: "who will stay, for how long, and how much value will they generate?"
 
 The project targets Senior Data Scientist roles in the gaming industry (Jagex, Miniclip, Sony Interactive Entertainment) where player retention modelling, pLTV prediction, and stakeholder communication are core responsibilities.
 
