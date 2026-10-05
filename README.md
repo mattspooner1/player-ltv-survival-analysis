@@ -188,7 +188,7 @@ The value of this project lies in the **production-quality framework and methodo
 
 | Document | Audience | Description |
 |----------|----------|-------------|
-| [Methodology](docs/methodology.md) | Data science interviewers | Technical deep-dive: model selection rationale, assumptions, validation |
+| [Methodology](docs/methodology.md) | Data scientists | Technical deep-dive: model selection rationale, assumptions, validation |
 | [Data Dictionary](docs/data_dictionary.md) | Code reviewers | Feature definitions, SaaS-to-gaming terminology mapping |
 | [Business Impact](docs/business_impact.md) | Non-technical stakeholders | Executive summary with recommendations and ROI analysis |
 
@@ -205,8 +205,6 @@ The value of this project lies in the **production-quality framework and methodo
 **Author:** Matt Spooner
 
 This project applies **survival analysis** to the gaming industry's need for player lifetime value prediction. Survival analysis remains underutilised in gaming analytics portfolios despite being the natural technique for time-to-event questions ("when will this player churn?"), and I wanted to demonstrate how it complements standard classification approaches.
-
-The project targets **Senior Data Scientist roles in the gaming industry** (Jagex, Miniclip, Sony Interactive Entertainment) where player retention modelling, pLTV prediction, and stakeholder communication are core responsibilities.
 
 ## Future Enhancements
 

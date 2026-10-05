@@ -420,7 +420,7 @@ Churn rates by subscription tier are remarkably uniform (~22% each), which sugge
 
 ## 9. What Would Change in Production
 
-This section addresses what a data science interviewer would naturally ask: "How would you do this differently with real data at scale?"
+This section addresses a natural follow-up question: "How would you do this differently with real data at scale?"
 
 ### Data Differences
 
