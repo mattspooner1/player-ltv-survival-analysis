@@ -179,6 +179,4 @@ Transparency about limitations builds trust in the analysis and sets realistic e
 
 This analysis was developed as a portfolio project demonstrating the application of survival analysis to gaming player analytics. The statistical framework (Cox Proportional Hazards, Kaplan-Meier estimation) answers the fundamental question behind any retention problem: "who will stay, for how long, and how much value will they generate?"
 
-The project targets Senior Data Scientist roles in the gaming industry (Jagex, Miniclip, Sony Interactive Entertainment) where player retention modelling, pLTV prediction, and stakeholder communication are core responsibilities.
-
 For technical details, see the [Methodology](methodology.md) document. For feature definitions, see the [Data Dictionary](data_dictionary.md).
