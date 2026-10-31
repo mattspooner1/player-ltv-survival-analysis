@@ -6,5 +6,5 @@ setup(
     description="Player Lifetime Value Prediction Using Survival Analysis",
     author="Matt Spooner",
     packages=find_packages(),
-    python_requires=">=3.10",
+    python_requires=">=3.11",
 )

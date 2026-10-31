@@ -87,7 +87,7 @@ from lifelines.statistics import logrank_test
 import yaml
 
 # Project paths
-PROJECT_ROOT = r"."
+PROJECT_ROOT = os.path.abspath(os.path.join(os.getcwd(), ".."))
 os.chdir(PROJECT_ROOT)
 
 # Load config
