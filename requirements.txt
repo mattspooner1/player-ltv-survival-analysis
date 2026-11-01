@@ -13,7 +13,7 @@ lightgbm==4.6.0
 optuna==4.7.0
 
 # Visualization
-matplotlib==3.10.8
+matplotlib==3.11.2
 seaborn==0.13.2
 
 # Configuration & utilities
