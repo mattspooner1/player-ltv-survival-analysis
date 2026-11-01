@@ -10,7 +10,7 @@ lifelines==0.30.1
 
 # Gradient boosting & tuning
 lightgbm==4.6.0
-optuna==4.7.0
+optuna==5.0.0
 
 # Visualization
 matplotlib==3.10.8
