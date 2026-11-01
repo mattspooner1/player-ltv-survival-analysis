@@ -5,6 +5,8 @@ survival target creation, and train/val/test splitting. Edge cases
 include empty DataFrames and all-missing columns.
 """
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -24,13 +26,13 @@ from src.data_processing import (
 # Fixtures
 # ---------------------------------------------------------------------------
 
-CONFIG_PATH = "config.yaml"
+CONFIG_PATH = str(Path(__file__).resolve().parent.parent / "config.yaml")
 
 
 @pytest.fixture
-def config():
-    """Load project configuration."""
-    return load_config(CONFIG_PATH)
+def config(synthetic_config):
+    """Project configuration with raw_files pointing at synthetic test data."""
+    return synthetic_config
 
 
 @pytest.fixture

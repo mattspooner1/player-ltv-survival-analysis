@@ -6,7 +6,9 @@ An executive summary of findings, recommendations, and estimated ROI for non-tec
 
 ## Executive Summary
 
-A mid-sized mobile gaming studio spends GBP 2M annually acquiring 500,000 players, but 30% churn within 30 days because the User Acquisition team cannot distinguish high-value players from likely churners at the point of acquisition. We built a predictive framework that estimates each player's 180-day value by combining two models: one that predicts **how long** a player will stay, and another that predicts **how much** they will spend. The framework identifies the strongest early warning signals of churn, ranks acquisition channels by player quality, and provides a targeting system for retention campaigns. Applied to production data with richer behavioural signals, this framework would enable the studio to reduce wasted acquisition spend and redirect budget toward channels that attract longer-lasting, higher-spending players.
+> **Scope note.** The studio, its GBP 2M budget, 500,000 players and 30% early churn are an **illustrative scenario**, not real studio data. The analysis uses a public SaaS subscription dataset (500 accounts) relabelled with gaming terms. The models did not rank churn risk better than chance on the test set (Cox C-index 0.40, GBSA 0.52), so every insight and GBP figure below is a **hypothesis to validate**, not a result.
+
+In the illustrative scenario, a mid-sized mobile gaming studio spends GBP 2M annually acquiring 500,000 players, but 30% churn within 30 days because the User Acquisition team cannot distinguish high-value players from likely churners at the point of acquisition. We built a predictive framework that estimates each player's 180-day value by combining two models: one that predicts **how long** a player will stay, and another that predicts **how much** they will spend. The framework is designed to surface early warning signals of churn, compare acquisition channels by player quality, and support retention targeting. On this dataset the signals it surfaced are weak, so the framework would need to be rerun and validated on real player data before it could guide budget decisions.
 
 ---
 
@@ -46,6 +48,8 @@ The pLTV score is simply: **probability of staying** multiplied by **expected sp
 
 ## Key Insights
 
+*Each insight below comes from a model that did not generalise on the test set. Read the "What we found" statements as observations in this dataset and the recommended actions as hypotheses to test.*
+
 ### Insight 1: Subscription tenure and spending trajectory are the strongest value signals
 
 **What we found:** Players who have maintained their subscription longer and whose spending is increasing over time account for 40% of the revenue model's predictive power. Subscription tenure alone is associated with a 51% reduction in churn risk.
@@ -56,7 +60,7 @@ The pLTV score is simply: **probability of staying** multiplied by **expected sp
 
 ![Feature importance chart showing top predictors of player lifetime value](../outputs/figures/business_feature_importance.png)
 
-**Estimated impact:** Early identification of at-risk high-value players could preserve GBP 50,000 - 150,000 in annual revenue through timely intervention (based on industry benchmarks of 10-15% retention uplift from targeted campaigns).
+**Estimated impact:** Early identification of at-risk high-value players could preserve GBP 50,000 - 150,000 in annual revenue through timely intervention (this assumes a 10-15% retention uplift from targeted campaigns, which is an unsourced assumption and not a result of this analysis).
 
 ### Insight 2: Gameplay consistency matters more than total playtime
 
@@ -76,15 +80,15 @@ The pLTV score is simply: **probability of staying** multiplied by **expected sp
 
 ![Survival curves by subscription tier showing similar retention across tiers](../outputs/figures/business_survival_by_tier.png)
 
-**Caveat:** This finding reflects the synthetic dataset's uniform churn distribution. In production, we would expect VIP players to churn at lower rates due to higher investment and sunk cost effects. The behavioural-over-tier principle would likely still hold, but tier would become a useful secondary signal.
+**Caveat:** This finding most likely reflects the synthetic dataset's uniform churn distribution. It says nothing reliable about how real tiers behave, and the behavioural-over-tier recommendation is untested.
 
-### Insight 4: Partner and organic channels produce the highest-value players
+### Insight 4: Partner and organic channels show the highest modelled value
 
 **What we found:** Players acquired through partner promotions and organic search generate the highest average 180-day revenue (GBP 1,349 and GBP 1,686 respectively), while event-acquired players generate the lowest (GBP 1,264). Partner-acquired players also have the lowest churn rate (15% vs. 30% for event-acquired).
 
 **Why it matters:** If the studio allocates UA budget equally across channels, it is overinvesting in lower-value channels and underinvesting in the ones that attract longer-lasting players.
 
-**Recommended action:** Shift 10-20% of UA budget from event and "other" channels toward organic content marketing and partner programmes. Monitor pLTV by channel weekly to track the impact.
+**Recommended action (hypothesis):** If the pattern holds on real data, pilot a small shift of UA budget toward organic and partner programmes, with a holdout group to measure incrementality. Do not reallocate on this evidence alone.
 
 ![Survival curves by acquisition channel](../outputs/figures/business_survival_by_channel.png)
 
@@ -104,22 +108,22 @@ The pLTV score is simply: **probability of staying** multiplied by **expected sp
 
 ### Model Performance in Plain Language
 
-The retention model correctly identifies the general direction of churn risk -- players flagged as high-risk do show lower retention -- and produces well-calibrated probability estimates (when the model says a player has a 70% chance of staying, approximately 70% of similar players do stay). The revenue model explains 22% of the variation in 180-day spending, substantially outperforming a naive approach that simply uses cohort averages.
+The retention model does not reliably rank which players are likely to churn: on the held-out test set the best model scored 0.52 where 0.50 is a coin flip, and the Cox model scored 0.40. No calibration check beyond the integrated Brier score was run, so the probability estimates should not be described as well-calibrated. The revenue model (Random Forest) explains 22% of the variation in 180-day spending and beats a cohort-average baseline, but individual predictions are still very uncertain.
 
-These performance levels are expected given the dataset's limitations (500 players with synthetic behavioural patterns). On production data with millions of players and richer gameplay signals (progression, social connections, in-app purchase patterns), we would expect significantly stronger results.
+The limited signal may come from the small, relabelled dataset (500 players), but that explanation has not been tested.
 
-**The key takeaway:** The methodology and framework are production-ready. The models are honest about their current limitations, and the pipeline is designed for easy retraining on new data.
+**The key takeaway:** The pipeline runs end to end and is designed for retraining on new data. The results on this dataset are too weak to support business decisions, and the dollar figures below should be read as scenario arithmetic.
 
 ### Business Value Summary
 
 | Opportunity | Mechanism | Estimated Annual Impact | Confidence |
 |-------------|-----------|------------------------|------------|
-| Retention campaign targeting | Model-selected offers to high-risk, high-value players | GBP 50,000 - 150,000 in preserved revenue | Medium (requires A/B test validation) |
-| Channel budget reallocation | Shift 20% from low-pLTV to high-pLTV channels | GBP 100,000 - 300,000 incremental revenue | Medium (requires production pLTV data) |
-| Early warning system | Day-7 behavioural scoring for new cohorts | Reduces time-to-insight from 90 days to 7 days | High (framework operational) |
-| Reduced wasted spend | Better targeting reduces early churn | GBP 100,000 in saved acquisition cost | Medium (depends on targeting precision on real data) |
+| Retention campaign targeting | Model-selected offers to high-risk, high-value players | GBP 50,000 - 150,000 in preserved revenue | Low (unvalidated assumption; requires A/B test) |
+| Channel budget reallocation | Shift 20% from low-pLTV to high-pLTV channels | GBP 100,000 - 300,000 incremental revenue | Low (requires production pLTV data and an incrementality test) |
+| Early warning system | Day-7 behavioural scoring for new cohorts | Would shorten time-to-insight if the scores prove predictive | Low (current models do not rank churn better than chance) |
+| Reduced wasted spend | Better targeting reduces early churn | GBP 100,000 in saved acquisition cost | Low (depends on targeting precision, currently unproven) |
 
-**Conservative total estimate: GBP 200,000 - 450,000 annually**, contingent on production data performance and A/B test validation of assumptions.
+**Scenario total: GBP 200,000 - 450,000 annually.** This is arithmetic on stated assumptions, not a forecast, and it depends entirely on models that perform much better than these did and on A/B test validation.
 
 ![Budget reallocation recommendation by channel](../outputs/figures/business_budget_reallocation.png)
 
@@ -161,11 +165,11 @@ For the full technical specification, see [docs/methodology.md](methodology.md).
 
 Transparency about limitations builds trust in the analysis and sets realistic expectations.
 
-1. **This analysis was built on a synthetic dataset of 500 players.** The dataset is structurally realistic but does not contain genuine gameplay behaviour. Model performance metrics reflect this limitation, not the framework's potential. On production data, we would expect substantially stronger results.
+1. **This analysis was built on a synthetic dataset of 500 players.** The dataset is structurally realistic but does not contain genuine gameplay behaviour. Model performance metrics reflect this limitation. How the framework would perform on production data is unknown.
 
-2. **Churn patterns in the dataset are unusually uniform.** All subscription tiers and most acquisition channels show similar ~22% churn rates. In real gaming data, we would expect more differentiation between segments, which would improve model targeting precision.
+2. **Churn patterns in the dataset are unusually uniform.** All subscription tiers and most acquisition channels show similar ~22% churn rates. Real gaming data may show more differentiation between segments, which could help, but that is untested.
 
-3. **Revenue predictions have meaningful uncertainty at the individual player level.** The model is more reliable for segment averages (e.g., "organic players are worth 25% more than event players on average") than for predicting any single player's exact spend.
+3. **Revenue predictions have meaningful uncertainty at the individual player level.** The model is more reliable for segment averages (e.g., "one channel's players are worth more than another's on average") than for predicting any single player's exact spend.
 
 4. **ROI estimates are projections, not guarantees.** The retention offer simulation assumes a 15% uplift in retention from a GBP 5 offer. Actual results depend on offer design, player segment, timing, and execution quality. A/B testing is required before scaling any intervention.
 
@@ -177,6 +181,6 @@ Transparency about limitations builds trust in the analysis and sets realistic e
 
 **Author:** Matt Spooner
 
-This analysis was developed as a portfolio project demonstrating the application of survival analysis to gaming player analytics. The statistical framework (Cox Proportional Hazards, Kaplan-Meier estimation) answers the fundamental question behind any retention problem: "who will stay, for how long, and how much value will they generate?"
+This analysis applies survival analysis to a gaming player analytics scenario using a relabelled public dataset. The statistical framework (Cox Proportional Hazards, Kaplan-Meier estimation) answers the fundamental question behind any retention problem: "who will stay, for how long, and how much value will they generate?"
 
 For technical details, see the [Methodology](methodology.md) document. For feature definitions, see the [Data Dictionary](data_dictionary.md).

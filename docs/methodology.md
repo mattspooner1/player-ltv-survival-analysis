@@ -290,7 +290,7 @@ Special handling for edge cases:
 
 The C-index results fall below the 0.75 target, which is expected on this dataset. The GBSA's C-index of 0.52 is only marginally above random (0.50), while the Cox model at 0.40 actually performs below random on the test set (indicating the learned coefficients do not generalise well to the test cohort).
 
-However, the IBS values of 0.08 are strong. IBS measures calibration -- whether the predicted survival probabilities match observed outcomes in aggregate. A low IBS means the models produce well-calibrated probability estimates even when pairwise ranking (C-index) is weak.
+The IBS values are 0.08. IBS mixes calibration and discrimination, and with 78% of players censored a low score is easy to reach, so it is not strong evidence of a useful model. A no-skill baseline (for example a Kaplan-Meier curve applied to everyone) was not computed and is needed to interpret it.
 
 **Why does training C-index (0.76) exceed test C-index (0.40)?**
 
@@ -299,7 +299,7 @@ The Cox model achieves its C-index target on training data but fails to generali
 2. The synthetic data generator may not embed strong, consistent relationships between features and churn timing
 3. The temporal shift between training cohort (pre-July 2024) and test cohort (post-September 2024) introduces distribution drift
 
-This is an honest finding, not a failure of methodology. The same pipeline on production data with millions of players and genuine behavioural variation would be expected to achieve C-index > 0.75.
+The pipeline did not find usable ranking signal in this data. Whether richer data would change that is untested, and no claim is made here about performance on real player data.
 
 ### LTV Model Metrics
 
@@ -359,7 +359,7 @@ The pre-specified decision criterion was:
 
 > If GBSA C-index > Cox C-index + 0.05, use GBSA for operational predictions and Cox for stakeholder interpretation.
 
-**Result:** GBSA C-index (0.52) exceeded Cox C-index (0.40) by 0.12, well above the 0.05 threshold. Following the decision criterion, GBSA is preferred for survival probability predictions, while Cox hazard ratios remain the primary tool for stakeholder communication about churn drivers.
+**Result:** GBSA C-index (0.52) exceeded Cox C-index (0.40) by 0.12, well above the 0.05 threshold. Following the decision criterion, GBSA is preferred for survival probability predictions, Cox hazard ratios are reported for exploration only, because the Cox model scored below chance on the test set and its coefficients should not be treated as reliable churn drivers. Note also that the GBSA's 0.52 is itself indistinguishable from chance at this sample size, so the decision rule picks the better of two weak models.
 
 ### pLTV Validation
 
@@ -402,7 +402,7 @@ Churn rates by subscription tier are remarkably uniform (~22% each), which sugge
 
 ### Modelling Limitations
 
-5. **C-index below target (0.52 vs. 0.75 target):** The survival model's ability to rank players by churn risk is only marginally better than random on the test set. This is honest and expected given limitations 1-3 above. The methodology is sound; the data lacks sufficient signal.
+5. **C-index below target (0.52 vs. 0.75 target):** The best survival model's ability to rank players by churn risk is not distinguishable from random on the test set, and the Cox model is below random. Limitations 1-3 above are plausible reasons, but they were not tested, so the data lacking signal is a hypothesis rather than a finding.
 
 6. **Revenue RMSE is large relative to mean (GBP 1,638 RMSE vs. GBP 1,432 mean revenue):** Per-player revenue predictions have substantial uncertainty. The model is more reliable for segment-level averages than individual predictions.
 

@@ -9,7 +9,7 @@
 **Download Date:** 2026-02-08
 
 > **Credit:** This dataset was created by River @ Rivalytics. It is used here
-> under the MIT license for educational and portfolio purposes. Please credit
+> under the MIT license for educational purposes. Please credit
 > the original author if reusing this data.
 
 ## Domain Reframing

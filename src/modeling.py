@@ -1466,6 +1466,11 @@ def save_model(
 def load_model(path: str) -> Any:
     """Load a trained model from disk.
 
+    Security note: joblib files are pickles, and loading one can run arbitrary
+    code. Only load files that this pipeline created on your own machine (see
+    `python src/modeling.py`). Never load a model file from a download, a fork
+    or a pull request.
+
     Args:
         path: File path to the model artifact (.joblib).
 

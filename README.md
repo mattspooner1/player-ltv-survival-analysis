@@ -1,22 +1,26 @@
 # Predicting Player Lifetime Value with Survival Analysis
 
-A production-ready pLTV framework that predicts **when** players will churn and **how much** they will spend, enabling data-driven user acquisition and retention decisions for mobile gaming studios.
+A pLTV framework that predicts **when** players will churn and **how much** they will spend, enabling data-driven user acquisition and retention decisions for mobile gaming studios.
 
-Built with Cox Proportional Hazards, Gradient Boosting Survival Analysis, and LightGBM revenue modeling on a 500-account dataset reframed from SaaS subscription analytics to a gaming context. The project demonstrates an end-to-end analytical workflow -- from SQL-based exploration through survival modeling to stakeholder-ready business recommendations.
+Built with Cox Proportional Hazards, Gradient Boosting Survival Analysis, and LightGBM revenue modeling on a 500-account dataset reframed from SaaS subscription analytics to a gaming context. The project covers an end-to-end analytical workflow, from SQL-based exploration through survival modeling to business recommendations.
+
+> **Read this first.** The business scenario (studio size, acquisition spend, 30% early churn) is **illustrative, not real studio data**. The data is a public SaaS subscription dataset (Rivalytics, Kaggle) relabelled with gaming terms, with only 500 accounts and 110 churn events. **The survival models do not rank churn risk better than chance on the test set** (Cox C-index 0.40, GBSA 0.52), so the hazard ratios, channel comparisons and budget figures below are **hypotheses to test, not validated findings**. The pipeline is the reusable part; the numbers are not evidence about real players.
 
 ---
 
 ## Business Problem
 
-A mid-sized mobile gaming studio spends GBP 2M annually acquiring 500K players, but 30% churn within 30 days due to poor targeting. Without knowing which early behaviours signal long-term value, the UA team cannot optimise bidding strategies -- overpaying for churners and underinvesting in high-retention segments. The studio needs a framework that identifies at-risk players within their first 7 days and predicts 180-day revenue potential to guide budget allocation.
+In this illustrative scenario, a mid-sized mobile gaming studio spends GBP 2M annually acquiring 500K players, but 30% churn within 30 days due to poor targeting. Without knowing which early behaviours signal long-term value, the UA team cannot optimise bidding strategies -- overpaying for churners and underinvesting in high-retention segments. The studio needs a framework that identifies at-risk players within their first 7 days and predicts 180-day revenue potential to guide budget allocation.
 
 ## Key Findings
 
-- **Survival models achieved a C-index of 0.52 (GBSA)**, correctly ranking player pairs by churn risk above the random baseline. The Cox PH model provides interpretable hazard ratios for stakeholder communication, while the gradient boosting model offers marginally better discrimination.
-- **Annual billing is the strongest churn predictor** (HR = 1.71), followed by early session volume (HR = 1.27) and usage consistency (HR = 1.26). These counter-intuitive signals warrant further investigation with richer gameplay data.
-- **The best LTV model (Random Forest) explains 22% of revenue variance** (R2 = 0.22, RMSE = GBP 1,638) on the test set, outperforming both cohort averages and tuned LightGBM.
-- **Churn rates are uniform across subscription tiers** (~22% each), suggesting that tier-based retention strategies would be ineffective -- behavioural signals matter more than plan level.
-- **Partner and organic acquisition channels produce the highest-pLTV players** (mean pLTV of GBP 1,400 and GBP 1,474 respectively), indicating budget reallocation opportunities.
+These are results on a small relabelled SaaS dataset. Treat them as a record of what the pipeline produced, not as conclusions about real players.
+
+- **The survival models did not discriminate churn risk on the held-out test set.** GBSA reached a C-index of 0.52 (about chance) and Cox PH reached 0.40 (below chance, where 0.50 is random). Cox scored 0.76 on training data, so it overfit. IBS is 0.08 for both, but no no-skill IBS baseline is reported here, so it should not be read as evidence the models are useful.
+- **Hazard ratios are exploratory.** Annual billing (HR = 1.71), early session volume (HR = 1.27) and usage consistency (HR = 1.26) have the largest coefficients. They come from a model that failed to generalise, and the annual billing direction contradicts domain expectations. They are hypotheses for richer data, not drivers of churn.
+- **The best revenue model (Random Forest) explains 22% of test variance** (R2 = 0.22, RMSE = GBP 1,638). It beats the cohort-average baseline, while tuned LightGBM (R2 = 0.04) barely beats predicting the mean. Per-player revenue error is large relative to mean revenue (GBP 1,432).
+- **Churn rates are near-uniform across subscription tiers** (~22% each). This most likely reflects how the synthetic data was generated rather than a property of players.
+- **Channel differences are descriptive only.** Partner and organic players show the highest mean pLTV (GBP 1,400 and GBP 1,474), but pLTV depends on the weak survival model and the groups are small. Any budget reallocation would need an incrementality test first.
 
 ## Sample Results
 
@@ -24,19 +28,19 @@ A mid-sized mobile gaming studio spends GBP 2M annually acquiring 500K players, 
 
 ![Survival curves showing retention probability over time by player tier](outputs/figures/km_survival_by_plan_tier.png)
 
-*Kaplan-Meier curves reveal that retention trajectories are remarkably similar across Free-to-Play, Premium, and VIP tiers -- challenging the assumption that higher-paying players are inherently stickier.*
+*Kaplan-Meier curves show similar retention across tiers in this dataset. This likely reflects how the data was generated, so it should not be read as a finding about real players.*
 
 ### What Drives Player Churn? (Hazard Ratios)
 
 ![Forest plot of Cox PH hazard ratios showing churn risk factors](outputs/figures/hazard_ratio_forest_plot.png)
 
-*Hazard ratios from the Cox model quantify each feature's impact on churn risk. HR > 1.0 (red) increases churn risk; HR < 1.0 (green) reduces it. Annual billing, early session count, and usage variability emerge as the most influential factors.*
+*Hazard ratios from the Cox model. HR > 1.0 (red) means higher modelled churn risk; HR < 1.0 (green) means lower. The model scored below chance on the test set, so read these as exploratory.*
 
 ### Feature Importance for Revenue Prediction
 
 ![Horizontal bar chart of top features driving LTV prediction](outputs/figures/feature_importance_ltv.png)
 
-*The LightGBM revenue model identifies usage consistency, error rate, and subscription tenure as the strongest predictors of 180-day player value.*
+*Feature importance from the LightGBM revenue model (R2 = 0.04 on test). Importances from a weak model are indicative at best.*
 
 ## Technical Approach
 
@@ -73,11 +77,16 @@ pip install -e .
 
 # Run the full pipeline
 python src/data_processing.py   # Clean data + feature engineering
-python src/modeling.py          # Train all models
+python src/modeling.py          # Train all models (writes outputs/models/)
+
+# Run the tests (no raw data needed; they use synthetic tables)
+pytest tests/ -v
 
 # Or explore interactively via notebooks
 jupyter notebook notebooks/
 ```
+
+**Model files.** The trained models are not committed. Run `python src/modeling.py` (or notebook 02) to create them, then run notebook 03, which loads them. Model files are joblib pickles and can run code when loaded, so only load files you generated yourself, never ones downloaded from a fork or pull request.
 
 ## Project Structure
 
@@ -111,7 +120,7 @@ player_ltv_survival_analysis/
 |
 |-- outputs/
 |   |-- figures/                           27 publication-quality visualisations (300 DPI)
-|   +-- models/                            Saved model artifacts + metadata JSON
+|   +-- models/                            Generated by src/modeling.py (joblib files not committed)
 |
 |-- docs/
 |   |-- methodology.md                     Technical deep-dive for data science reviewers
@@ -129,28 +138,28 @@ player_ltv_survival_analysis/
 
 | Model | C-index (Test) | IBS (Test) | Target | Notes |
 |-------|---------------|------------|--------|-------|
-| Cox PH | 0.40 | 0.082 | C > 0.75 | Interpretable hazard ratios; PH assumption passed |
-| GBSA | 0.52 | 0.079 | C > 0.75 | Preferred for predictions; marginal gain over random |
+| Cox PH | 0.40 | 0.082 | C > 0.75 | Target missed; below chance, train C-index 0.76 (overfit); PH assumption test passed (low power, 110 events) |
+| GBSA | 0.52 | 0.079 | C > 0.75 | Target missed; about chance |
 
 ### LTV Models
 
 | Model | RMSE (GBP) | R-squared | MAPE | Notes |
 |-------|-----------|-----------|------|-------|
 | Cohort Average | 2,324 | -0.56 | 75% | Naive baseline |
-| Random Forest | 1,638 | 0.22 | 91% | Best overall performance |
+| Random Forest | 1,638 | 0.22 | 91% | Best of the three on RMSE and R2; high MAPE |
 | LightGBM (tuned) | 1,819 | 0.04 | 88% | 20 Optuna trials; overfitting on small data |
 
 ### Performance Context
 
-Model performance is modest, which is expected and honestly reported. The primary constraints are:
+Both survival models missed the C-index target of 0.75, and the revenue models explain little variance. The likely constraints are:
 
-1. **Synthetic data** -- The Kaggle dataset lacks the behavioural richness of real gameplay data (session depth, progression, social features, in-app purchase patterns).
-2. **Small sample** -- 500 accounts with only 110 churn events limits the signal available for complex models.
-3. **Uniform churn** -- Near-identical churn rates across segments (~22%) suggest the synthetic generator did not encode strong segment-level patterns.
+1. **Relabelled SaaS data** -- The Kaggle dataset has none of the behavioural richness of real gameplay data (session depth, progression, social features, in-app purchase patterns).
+2. **Small sample** -- 500 accounts with 110 churn events (47 validation players) limits the signal available to complex models and makes tuning noisy.
+3. **Uniform churn** -- Near-identical churn rates across segments (~22%) suggest the data contains little segment-level signal to find.
 
-The value of this project lies in the **production-quality framework and methodology** -- the same pipeline applied to a studio's real telemetry data (millions of players, hundreds of behavioural features) would be expected to perform substantially better. See [docs/methodology.md](docs/methodology.md) for a detailed discussion of limitations and what would change in production.
+These are plausible explanations, not tested ones. Whether the same pipeline would perform better on real telemetry is an open question that only real data can answer. See [docs/methodology.md](docs/methodology.md) for limitations and what would need to change before use on real data.
 
-## Skills Demonstrated
+## Techniques Used
 
 **Survival Analysis and Statistical Modeling**
 - Cox Proportional Hazards with hazard ratio interpretation
@@ -175,7 +184,7 @@ The value of this project lies in the **production-quality framework and methodo
 **Business Communication**
 - Stakeholder Q&A format answering 5 business questions
 - ROI simulation for retention interventions
-- Budget reallocation recommendations backed by pLTV analysis
+- Budget reallocation scenarios, framed as hypotheses to test
 - Executive-friendly visualisations with plain-language annotations
 
 **Software Engineering**
@@ -196,19 +205,19 @@ The value of this project lies in the **production-quality framework and methodo
 
 **Source:** [SaaS Subscription & Churn Analytics Dataset](https://www.kaggle.com/datasets/rivalytics/saas-subscription-and-churn-analytics-dataset) by Rivalytics on Kaggle.
 
-**License:** MIT (unrestricted use for portfolio and GitHub).
+**License:** MIT.
 
-**Reframing:** The SaaS dataset is structurally identical to mobile gaming subscription services (Battle Pass, VIP tiers). Accounts map to player profiles, subscriptions to premium tiers, feature usage to gameplay sessions, and support tickets to player support interactions. See [docs/data_dictionary.md](docs/data_dictionary.md) for the full terminology mapping.
+**Reframing:** The data is SaaS subscription data relabelled with gaming terms (Battle Pass, VIP tiers). The structures are similar, but behaviour and churn patterns are not those of real players. Accounts map to player profiles, subscriptions to premium tiers, feature usage to gameplay sessions, and support tickets to player support interactions. See [docs/data_dictionary.md](docs/data_dictionary.md) for the full terminology mapping.
 
 ## About
 
 **Author:** Matt Spooner
 
-This project applies **survival analysis** to the gaming industry's need for player lifetime value prediction. Survival analysis remains underutilised in gaming analytics portfolios despite being the natural technique for time-to-event questions ("when will this player churn?"), and I wanted to demonstrate how it complements standard classification approaches.
+This project applies **survival analysis** to the gaming industry's need for player lifetime value prediction. Survival analysis is a natural technique for time-to-event questions ("when will this player churn?"), and this project explores how it complements standard classification approaches.
 
 ## Future Enhancements
 
-- **Real gameplay features**: Session depth, progression level, social connections, and in-app purchase patterns would substantially improve model discrimination
+- **Real gameplay features**: Session depth, progression level, social connections, and in-app purchase patterns may improve model discrimination (untested)
 - **Time-varying covariates**: Extending Cox to handle features that change weekly (usage rate, spending velocity)
 - **Competing risks framework**: Modelling different churn reasons (pricing, support, competition) separately
 - **Real-time scoring API**: FastAPI endpoint returning pLTV and risk scores for live player data

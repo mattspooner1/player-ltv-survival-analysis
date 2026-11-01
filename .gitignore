@@ -1,7 +1,10 @@
 # Raw source data (download instructions in data/README.md)
 data/raw/*.csv
 
-# Model artifacts (committed: joblib files included for immediate reproducibility)
+# Model artifacts: regenerate with `python src/modeling.py`.
+# Serialized models (joblib/pickle) execute code when loaded, so they are not committed.
+# The small .json metadata files next to them are committed.
+outputs/models/*.joblib
 outputs/models/*.pkl
 outputs/models/*.txt
 
